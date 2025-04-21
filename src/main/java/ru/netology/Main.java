@@ -1,41 +1,49 @@
 package ru.netology;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 public class Main {
-    private static final BlockingQueue<String> queue1 = new ArrayBlockingQueue<>(100);
-    private static final BlockingQueue<String> queue2 = new ArrayBlockingQueue<>(100);
-    private static final BlockingQueue<String> queue3 = new ArrayBlockingQueue<>(100);
+    public static final int QUEUE_SIZE = 100;
+    public static final int TEXT_QUANTITY = 10_000;
+    public static final int TEXT_SIZE = 100_000;
+
+    private static final List<BlockingQueue<String>> queues = Arrays.asList(
+            new ArrayBlockingQueue<>(QUEUE_SIZE),
+            new ArrayBlockingQueue<>(QUEUE_SIZE),
+            new ArrayBlockingQueue<>(QUEUE_SIZE)
+    );
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
 
-
-        new Thread(() -> {
-            for (int i = 0; i < 10000; i++) {
-                String str = generateText("abc", 100000);
+        Thread producer = new Thread(() -> {
+            for (int i = 0; i < TEXT_QUANTITY; i++) {
+                String str = generateText("abc", TEXT_SIZE);
                 try {
-                    queue1.put(str);
-                    queue2.put(str);
-                    queue3.put(str);
+                    for(BlockingQueue<String> queue:queues) {
+                        queue.put(str);
+                    }
                 } catch (InterruptedException e) {
-                    break;
+                    return;
                 }
             }
-        }).start();
+        });
+        producer.start();
 
-        Thread threadA = new Thread(new MyRunnable(queue1, 'a'));
-
-        Thread threadB = new Thread(new MyRunnable(queue2, 'b'));
-
-        Thread threadC = new Thread(new MyRunnable(queue3, 'c'));
-
-        threadA.start();
-        threadB.start();
-        threadC.start();
-
+        List<Thread> consumers = new ArrayList<>();
+        for(int i = 0; i < queues.size(); i++){
+            Thread consumer = new Thread(new MyRunnable(queues.get(i), (char)('a' + i)));
+            consumers.add(consumer);
+            consumer.start();
+        }
+        for(Thread consumer : consumers){
+            consumer.join();
+        }
     }
 
     public static String generateText(String letters, int length) {

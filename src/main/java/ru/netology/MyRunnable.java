@@ -14,23 +14,18 @@ public class MyRunnable implements Runnable {
 
     @Override
     public void run() {
-        int max = 0;
+        long max = 0;
         while (true) {
             try {
                 String str = queue.poll(5, TimeUnit.SECONDS);
-                int count = 0;
+                long count = 0;
                 if (str == null) {
                     break;
                 }
-                for (char c : str.toCharArray()) {
-                    if (c == letter) {
-                        count++;
-                    }
-                }
+                count = str.chars().filter(c->c == letter).count();
                 if (count > max) {
                     max = count;
                 }
-
             } catch (InterruptedException e) {
                 break;
             }
